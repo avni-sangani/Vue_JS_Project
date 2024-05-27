@@ -13,7 +13,7 @@ const router = createRouter({
       component: HomeView,
       children: [
         {
-          path: 'component_communicate',
+          path: 'component_demo',
           component: ComponentCommunication
         },
         {

@@ -8,13 +8,13 @@ export default createStore({
     loading: false,
     error: null,
     currentPage: 1,
-    perPage: 10,
+    perPage: 5,
     searchQuery: '',
     filters: {
       id: '',
-      title: '',
-      completed: '',
-      userId: ''
+      name: '',
+      username: '',
+      email: ''
     }
   },
   mutations: {
@@ -33,9 +33,11 @@ export default createStore({
     },
     setSearchQuery(state, query) {
       state.searchQuery = query
+      state.currentPage = 1
     },
     setFilters(state, filters) {
       state.filters = { ...state.filters, ...filters }
+      state.currentPage = 1
     }
   },
   actions: {
@@ -43,7 +45,7 @@ export default createStore({
       commit('setLoading', true)
       commit('setError', null)
       try {
-        const response = await axios.get('https://jsonplaceholder.typicode.com/todos', {
+        const response = await axios.get('https://jsonplaceholder.typicode.com/users', {
           params: {
             page: state.currentPage,
             limit: state.perPage,
@@ -57,20 +59,20 @@ export default createStore({
                 return false
               }
               if (
-                key === 'userId' &&
-                !user[key].toString().includes(state.filters[key].toString())
-              ) {
-                return false
-              }
-              if (
-                key === 'title' &&
+                key === 'name' &&
                 !user[key].toLowerCase().includes(state.filters[key].toLowerCase())
               ) {
                 return false
               }
               if (
-                key === 'completed' &&
-                user[key].toString().toLowerCase() !== state.filters[key].toString().toLowerCase()
+                key === 'username' &&
+                !user[key].toLowerCase().includes(state.filters[key].toLowerCase())
+              ) {
+                return false
+              }
+              if (
+                key === 'email' &&
+                !user[key].toLowerCase().includes(state.filters[key].toLowerCase())
               ) {
                 return false
               }

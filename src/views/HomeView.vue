@@ -4,5 +4,4 @@ import LandingPageHeader from '../components/LandingPageHeader.vue'
 
 <template>
   <LandingPageHeader />
-  <RouterView />
 </template>

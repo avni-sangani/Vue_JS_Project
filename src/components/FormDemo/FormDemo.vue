@@ -1,169 +1,197 @@
-<script setup>
-import { ref, onMounted, computed, watch } from 'vue'
-import { useField, useForm } from 'vee-validate'
-import moment from 'moment'
-
-/*Validation schema*/
-const { handleSubmit, handleReset } = useForm({
-  validationSchema: {
-    PERSON_NAME(value) {
-      if (!value) {
-        return 'Please enter your name'
-      } else if (value.replace(/\s/g, '').length < 2) {
-        return 'Please enter valid name'
-      } else if (!/^[a-zA-Z\s]*$/.test(value)) {
-        return 'Name should only contain letters'
-      } else if (value.length > 50) {
-        return 'Name cannot exceed 50 characters.'
-      } else {
-        return true
-      }
-    },
-    PERSON_DOB(value) {
-      if (userData.value.IS_PERSON_MINOR == 'true') {
-        if (!value || value.length === 0) {
-          return 'Please enter your birth date'
-        } else if (/\s/.test(value)) {
-          return 'Date of Birth number must not contain spaces.'
-        } else if (!/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
-          return 'PPlease enter a valid birth date. (MM/DD/YYYY)'
-        }
-      }
-      return true
-    }
-  }
-})
-
-const userData = ref({
-  PERSON_NAME: useField('PERSON_NAME'),
-  PERSON_DOB: useField('PERSON_DOB'),
-  IS_PERSON_MINOR: false
-})
-
-const menu1 = ref(false)
-const date = ref()
-const snackbar = ref(false)
-const timeout = ref(2000)
-
-const computedDateFormattedMomentjs = () => {
-  userData.value.PERSON_DOB.value = date.value ? moment(date.value).format('MM/DD/YYYY') : ''
-  menu1.value = false
-  return userData.value.PERSON_DOB.value
-}
-
-watch(date, (val) => {
-  if (val) {
-    computedDateFormattedMomentjs()
-  }
-})
-
-const submit = handleSubmit(async () => {
-  snackbar.value = true
-})
-</script>
-
 <template>
-  <v-container class="d-flex justify-center align-center flex-column">
+  <v-container class="d-flex justify-center flex-column">
     <h1 class="text-center my-5" style="color: rgb(72, 169, 166)">User Form</h1>
-    <v-form fast-fail @submit.prevent="submit" class="form_section">
-      <v-row>
-        <v-col lg="12" md="12" cols="12">
-          <p class="text-start">Enter your name*</p>
-          <v-text-field
-            v-model="userData.PERSON_NAME.value"
-            :error-messages="userData.PERSON_NAME.errorMessage"
-            clear-icon="text_input"
-            variant="outlined"
-            placeholder="e.g. John Doe*"
-            id="PERSON_NAME"
-            class="PERSON_NAME"
-          ></v-text-field>
-        </v-col>
-        <v-col cols="12">
-          <p class="text-start">Enter your DOB*</p>
-          <v-menu
-            v-model="menu1"
-            :close-on-content-click="false"
-            transition="scale-transition"
-            offset-y
-            auto
-          >
-            <template v-slot:activator="{ props }">
-              <v-text-field
-                v-model="userData.PERSON_DOB.value"
-                :error-messages="userData.PERSON_DOB.errorMessage"
-                persistent-hint
-                append-inner-icon="mdi-calendar"
-                @click:clear="date = null"
-                @click:append="menu1 = true"
-                @click="menu1 = !menu1"
-                variant="outlined"
-                placeholder="e.g. MM/DD/YYYY*"
-                v-bind="props"
-                id="PERSON_DOB"
-                class="PERSON_DOB"
-                min="1900/01/01"
-                clearable
-              ></v-text-field>
-            </template>
-            <v-date-picker
-              v-model="date"
-              :max="currentDate"
-              hide-actions
-              @update:model-value="computedDateFormattedMomentjs"
+
+    <div class="form-container">
+      <form @submit.prevent="handleSubmit" class="form">
+        <div v-for="block in blocks" :key="block.token" class="form-group">
+          <label :for="block.token" class="form-label">{{ block.props.title }}</label>
+          <div class="input-wrapper">
+            <input
+              v-if="block.type === 'text'"
+              :id="block.token"
+              v-model="formData[block.token]"
+              :placeholder="block.props.placeholder"
+              :required="isRequired(block)"
+              type="text"
+              class="form-input"
             />
-          </v-menu>
-        </v-col>
-        <v-col cols="12">
-          <v-checkbox
-            v-model="userData.IS_PERSON_MINOR"
-            value="true"
-            class="shrink terms_condition"
-            color="#EE812D"
-            density="compact"
-            hide-details="auto"
-            type="checkbox"
-          >
-            <template #label style="display: flex; align-items: flex-start">
-              <p class="text-sm font-extrabold">Is the current person minor?</p>
-            </template>
-          </v-checkbox>
-        </v-col>
-        <v-col class="d-flex justify-center">
-          <v-btn
-            :loading="loading"
-            class="text-none mb-4"
-            color="secondary"
-            size="x-large"
-            variant="flat"
-            block
-            type="submit"
-            rounded
-          >
-            Submit
-          </v-btn>
-        </v-col>
-      </v-row>
-      <v-snackbar v-model="snackbar" :timeout="timeout" color="success" height="60px">
+            <input
+              v-if="block.type === 'date'"
+              :id="block.token"
+              v-model="formData[block.token]"
+              :placeholder="block.props.placeholder"
+              :required="isRequired(block)"
+              type="date"
+              class="form-input"
+            />
+            <input
+              v-if="block.type === 'checkbox'"
+              :id="block.token"
+              v-model="formData[block.token]"
+              type="checkbox"
+              class="form-checkbox"
+            />
+            <input
+              v-if="block.type === 'email'"
+              :id="block.token"
+              v-model="formData[block.token]"
+              :placeholder="block.props.placeholder"
+              :required="isRequired(block)"
+              type="email"
+              class="form-input"
+            />
+          </div>
+        </div>
+        <button type="submit" class="submit-button">Submit</button>
+      </form>
+      <v-snackbar
+        v-model="snackbar"
+        :timeout="timeout"
+        color="success"
+        height="60px"
+        style="margin-left: 21%"
+      >
         <p class="text-h6 font-bold">Record submitted successfully!!</p>
       </v-snackbar>
-    </v-form>
+    </div>
   </v-container>
 </template>
 
+<script setup>
+import { ref } from 'vue'
+
+// The JSON configuration object
+const jsonConfig = {
+  blocks: [
+    {
+      token: 'PERSON_NAME',
+      type: 'text',
+      props: {
+        title: 'Enter your name*',
+        required: true,
+        placeholder: 'e.g. John Doe'
+      }
+    },
+    {
+      token: 'IS_PERSON_MINOR',
+      type: 'checkbox',
+      props: {
+        title: 'Is the current person minor?',
+        default: false
+      }
+    },
+    {
+      token: 'PERSON_DOB',
+      type: 'date',
+      props: {
+        title: 'Enter your DOB',
+        required: 'IS_PERSON_MINOR',
+        placeholder: 'e.g. 01/01/2000'
+      }
+    }
+    // {
+    //   token: 'PERSON_EMAIL',
+    //   type: 'email',
+    //   props: {
+    //     title: 'Enter your email',
+    //     required: true,
+    //     placeholder: 'e.g. example@mail.com'
+    //   }
+    // },
+    // {
+    //   token: 'PERSON_PHONE',
+    //   type: 'text',
+    //   props: {
+    //     title: 'Enter your phone number',
+    //     required: true,
+    //     placeholder: 'e.g. +1234567890'
+    //   }
+    // }
+  ]
+}
+
+// Form data and blocks
+const formData = ref({})
+const blocks = jsonConfig.blocks
+const snackbar = ref(false)
+const timeout = ref(2000)
+
+// Function to determine if a field is required
+const isRequired = (block) => {
+  if (block.props.required === 'IS_PERSON_MINOR') {
+    return formData.value.IS_PERSON_MINOR
+  }
+  return block.props.required
+}
+
+// Handle form submission
+const handleSubmit = () => {
+  snackbar.value = true
+  console.log('Form data:', formData.value)
+  formData.value = {}
+}
+</script>
+
 <style scoped>
-.form_section {
-  width: 800px;
-  border-radius: 20px;
-  padding: 50px;
-  box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+.form-container {
+  display: flex;
+  justify-content: center;
 }
 
-:deep(.v-picker__header) {
-  display: none !important;
+.form {
+  width: 80%;
+  max-width: 600px;
+  background-color: #f4f4f4;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-:deep(.v-input__details) {
-  text-align: start;
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group:nth-child(2) {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.form-input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+}
+
+.form-checkbox[data-v-7b7158f8] {
+  margin: 0 5px 5px 0;
+}
+
+.submit-button {
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.submit-button:hover {
+  background-color: #0056b3;
 }
 </style>
